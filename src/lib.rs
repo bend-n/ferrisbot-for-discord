@@ -266,14 +266,18 @@ async fn event_handler(
 	}
 
 	if let serenity::FullEvent::Message { new_message } = event {
-		if !new_message.author.bot {
+		if !new_message.author.bot
+			// dont leak private channels
+			&& include!("whitelist.channels").contains(&new_message.channel_id.get())
+		// if wanted, can add or pattern with role specific whitelists below
+		// doesnt seem like theres really a good discord way to do this
+		{
 			for (person, matcher) in data.highlights.read().await.find(&new_message.content) {
 				_ = person
 					.direct_message(
 						ctx,
 						serenity::CreateMessage::new().content(format!(
-							"your match `{matcher}` was satisfied on message ```\n{}\n``` {}",
-							new_message.content.replace('`', "​`"),
+							"your match `{matcher}` was satisfied on message {}",
 							new_message.link()
 						)),
 					)
